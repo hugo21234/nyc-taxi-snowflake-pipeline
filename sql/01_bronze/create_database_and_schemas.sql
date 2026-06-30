@@ -1,0 +1,10 @@
+-- ═══════════════════════════════════════════════════════════
+-- Medallion Architecture: NYC Yellow Taxi Pipeline
+-- Layer 0: Database & Schema Setup
+-- ═══════════════════════════════════════════════════════════
+
+CREATE DATABASE IF NOT EXISTS TAXI_NYC;
+
+CREATE SCHEMA IF NOT EXISTS TAXI_NYC.NYC_TAXI_RAW;  -- Bronze: raw ingestion
+CREATE SCHEMA IF NOT EXISTS TAXI_NYC.TAXI_SILVER;    -- Silver: typed & cleaned
+CREATE SCHEMA IF NOT EXISTS TAXI_NYC.TAXI_OURO;      -- Gold: analytical layer

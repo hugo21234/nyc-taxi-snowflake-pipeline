@@ -1,0 +1,6 @@
+# Never commit raw data files or credentials
+*.parquet
+*.csv
+*.env
+secrets.yml
+snowflake_credentials.json
