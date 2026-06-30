@@ -1,10 +1,20 @@
--- ═══════════════════════════════════════════════════════════
--- Gold Layer: TAXI_NYC.TAXI_OURO.DIM_DATE
--- Temporal dimension table: stores pickup and dropoff
--- timestamps from Silver for time-series analytical queries.
--- ═══════════════════════════════════════════════════════════
+-- Gold Layer: Date Dimension
+-- Materializes temporal attributes from Silver trip timestamps.
+-- Enables time-series slicing without recomputing HOUR/DATE on every query.
 
-CREATE OR REPLACE TABLE TAXI_NYC.TAXI_OURO.DIM_DATE (
-    PICKUP   TIMESTAMP_NTZ(9),  -- Trip start (from TAXI_PRATA.TPEP_PICKUP_DATETIME)
-    DROPOFF  TIMESTAMP_NTZ(9)   -- Trip end (from TAXI_PRATA.TPEP_DROPOFF_DATETIME)
-);
+CREATE OR REPLACE TABLE TAXI_NYC.TAXI_OURO.DIM_DATE AS
+SELECT DISTINCT
+    DATE(TPEP_PICKUP_DATETIME)          AS TRIP_DATE,
+    YEAR(TPEP_PICKUP_DATETIME)          AS YEAR,
+    MONTH(TPEP_PICKUP_DATETIME)         AS MONTH,
+    MONTHNAME(TPEP_PICKUP_DATETIME)     AS MONTH_NAME,
+    WEEKOFYEAR(TPEP_PICKUP_DATETIME)    AS WEEK_OF_YEAR,
+    DAYOFWEEK(TPEP_PICKUP_DATETIME)     AS DAY_OF_WEEK,      -- 0=Sun, 6=Sat
+    DAYNAME(TPEP_PICKUP_DATETIME)       AS DAY_NAME,
+    HOUR(TPEP_PICKUP_DATETIME)          AS HOUR_OF_DAY,
+    CASE
+        WHEN DAYOFWEEK(TPEP_PICKUP_DATETIME) IN (0, 6) THEN TRUE
+        ELSE FALSE
+    END                                 AS IS_WEEKEND
+FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
+ORDER BY TRIP_DATE;

@@ -4,3 +4,4 @@
 *.env
 secrets.yml
 snowflake_credentials.json
+.DS_Store

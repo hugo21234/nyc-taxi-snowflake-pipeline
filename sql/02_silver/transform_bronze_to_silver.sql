@@ -1,11 +1,7 @@
--- ═══════════════════════════════════════════════════════════
--- Bronze → Silver Transformation
--- TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE → TAXI_NYC.TAXI_SILVER.TAXI_PRATA
---
--- Applies: type casting, null filtering, basic quality rules
--- TRY_TO_* functions: failed casts return NULL (no load failures)
--- Run after COPY INTO TAXI_BRONZE from stage
--- ═══════════════════════════════════════════════════════════
+-- Bronze -> Silver Transformation
+-- Applies: type casting, null filtering, basic quality rules.
+-- TRY_TO_* functions cast gracefully — failed casts become NULL instead of erroring.
+-- Run after COPY INTO TAXI_BRONZE.
 
 INSERT INTO TAXI_NYC.TAXI_SILVER.TAXI_PRATA
 SELECT
@@ -32,12 +28,11 @@ SELECT
 FROM TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE
 
 WHERE
-    -- Quality filters: reject structurally invalid rows
     TPEP_PICKUP_DATETIME  IS NOT NULL
     AND TPEP_DROPOFF_DATETIME IS NOT NULL
-    AND TRY_TO_NUMBER(PASSENGER_COUNT)  > 0
-    AND TRY_TO_DOUBLE(TRIP_DISTANCE)    > 0
-    AND TRY_TO_DOUBLE(FARE_AMOUNT)      > 0
-    -- Temporal sanity: pickup must precede dropoff
+    AND TRY_TO_NUMBER(PASSENGER_COUNT) > 0
+    AND TRY_TO_DOUBLE(TRIP_DISTANCE)   > 0
+    AND TRY_TO_DOUBLE(FARE_AMOUNT)     > 0
+    -- Pickup must precede dropoff (rejects data entry errors)
     AND TRY_TO_TIMESTAMP(TPEP_PICKUP_DATETIME)
         < TRY_TO_TIMESTAMP(TPEP_DROPOFF_DATETIME);
