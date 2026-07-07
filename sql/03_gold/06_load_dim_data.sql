@@ -1,5 +1,5 @@
 -- ============================================================
--- Gold Layer DML: Load DIM_DATA from Silver
+-- Camada Gold DML: carga de DIM_DATA a partir da Silver
 -- ============================================================
 
 INSERT INTO TAXI_NYC.TAXI_GOLD.DIM_DATA (

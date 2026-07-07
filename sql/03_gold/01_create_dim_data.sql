@@ -1,6 +1,6 @@
 -- ============================================================
--- Gold Layer DDL: DIM_DATA (Date Dimension)
--- Surrogate key via IDENTITY. Grain: one row per unique date.
+-- Camada Gold DDL: DIM_DATA (Dimensão de Data)
+-- Chave substituta via IDENTITY. Granularidade: uma linha por data única.
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.TAXI_GOLD.DIM_DATA (

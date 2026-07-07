@@ -1,8 +1,9 @@
 -- ============================================================
--- Silver Layer: Load from Bronze
--- Applies type casting, null filtering, basic quality rules.
--- TRY_TO_* functions cast gracefully — failed casts become NULL.
--- Run after COPY INTO TAXI_BRONZE.
+-- Camada Silver: carga a partir da Bronze
+-- Aplica conversão de tipos, filtragem de nulos e regras
+-- básicas de qualidade. Funções TRY_TO_* convertem com segurança
+-- — conversões que falham retornam NULL.
+-- Executar após o COPY INTO em TAXI_BRONZE.
 -- ============================================================
 
 INSERT INTO TAXI_NYC.TAXI_SILVER.TAXI_PRATA
@@ -33,5 +34,6 @@ WHERE
     AND TRY_TO_NUMBER(PASSENGER_COUNT) > 0
     AND TRY_TO_DOUBLE(TRIP_DISTANCE) > 0
     AND TRY_TO_DOUBLE(FARE_AMOUNT) > 0
+    -- O embarque precisa ser anterior ao desembarque (rejeita erros de digitação)
     AND TRY_TO_TIMESTAMP(TPEP_PICKUP_DATETIME)
         < TRY_TO_TIMESTAMP(TPEP_DROPOFF_DATETIME);

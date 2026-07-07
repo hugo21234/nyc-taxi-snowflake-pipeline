@@ -1,19 +1,19 @@
--- Bronze Layer: COPY INTO from internal stage
--- Run after creating the stage and uploading raw Parquet files
+-- Camada Bronze: COPY INTO a partir de stage interno
+-- Executar após criar o stage e enviar os arquivos Parquet brutos
 
--- Step 1: Create internal stage
+-- Passo 1: Criar stage interno
 CREATE OR REPLACE STAGE TAXI_NYC.NYC_TAXI_RAW.RAW_STAGE
   FILE_FORMAT = (TYPE = 'PARQUET');
 
--- Step 2: Upload your file via SnowSQL CLI or Snowsight UI
--- PUT file:///path/to/yellow_tripdata_2024-01.parquet @TAXI_NYC.NYC_TAXI_RAW.RAW_STAGE;
+-- Passo 2: Enviar o arquivo via SnowSQL CLI ou interface do Snowsight
+-- PUT file:///caminho/para/yellow_tripdata_2024-01.parquet @TAXI_NYC.NYC_TAXI_RAW.RAW_STAGE;
 
--- Step 3: Load into Bronze
+-- Passo 3: Carregar na Bronze
 COPY INTO TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE
 FROM @TAXI_NYC.NYC_TAXI_RAW.RAW_STAGE
 FILE_FORMAT = (TYPE = 'PARQUET')
 MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
-ON_ERROR = 'CONTINUE';  -- Log bad rows; don't abort entire load
+ON_ERROR = 'CONTINUE';  -- Registra linhas com erro; não aborta a carga inteira
 
--- Step 4: Verify load
+-- Passo 4: Verificar a carga
 SELECT COUNT(*) AS total_rows FROM TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE;

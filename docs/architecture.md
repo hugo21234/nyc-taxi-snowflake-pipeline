@@ -1,9 +1,9 @@
-# Architecture — NYC Taxi Snowflake Pipeline
+# Arquitetura — Pipeline NYC Taxi no Snowflake
 
-## Medallion Architecture
+## Arquitetura Medallion
 
 ```
-[NYC TLC Parquet files]
+[Arquivos Parquet da NYC TLC]
         |
         v
 [STAGE: NYC_TAXI_RAW.RAW_STAGE]
@@ -11,41 +11,41 @@
    COPY INTO
         |
         v
-[BRONZE: NYC_TAXI_RAW.TAXI_BRONZE]   <-- all VARCHAR, raw landing
+[BRONZE: NYC_TAXI_RAW.TAXI_BRONZE]   <-- tudo VARCHAR, chegada bruta
         |
-   INSERT ... SELECT (TRY_TO_* casts + quality filters)
-        |
-        v
-[SILVER: TAXI_SILVER.TAXI_PRATA]     <-- typed, cleaned
-        |
-   Analytical queries + DIM_DATE
+   INSERT ... SELECT (casts TRY_TO_* + filtros de qualidade)
         |
         v
-[GOLD: TAXI_OURO.*]                  <-- aggregated, consumer-ready
+[SILVER: TAXI_SILVER.TAXI_PRATA]     <-- tipado, limpo
+        |
+   Queries analíticas + DIM_DATA
+        |
+        v
+[GOLD: TAXI_GOLD.*]                  <-- agregado, pronto para consumo
 ```
 
-## Why all VARCHAR in Bronze?
+## Por que tudo VARCHAR na Bronze?
 
-Loading Parquet/CSV directly into typed columns breaks when:
-- A vendor sends a NULL where a number is expected
-- A timestamp format changes between monthly files
-- A new column appears mid-year
+Carregar Parquet/CSV diretamente em colunas tipadas quebra quando:
+- Um fornecedor envia um NULL onde um número era esperado
+- O formato de timestamp muda entre arquivos mensais
+- Uma nova coluna aparece no meio do ano
 
-All Bronze columns land as `VARCHAR`. `TRY_TO_*` functions in the Silver
-transformation handle type coercion gracefully — failed casts become `NULL`
-instead of aborting the entire load.
+Todas as colunas da Bronze chegam como `VARCHAR`. As funções `TRY_TO_*` na
+transformação para Silver tratam a conversão de tipo com segurança —
+conversões que falham viram `NULL` em vez de abortar a carga inteira.
 
-## Why `TRY_TO_*` instead of `CAST`?
+## Por que `TRY_TO_*` em vez de `CAST`?
 
-`CAST('bad_value' AS FLOAT)` raises an error and stops the query.
-`TRY_TO_DOUBLE('bad_value')` returns `NULL` and continues.
-In production pipelines, you want bad rows isolated, not the job killed.
+`CAST('valor_invalido' AS FLOAT)` lança um erro e interrompe a query.
+`TRY_TO_DOUBLE('valor_invalido')` retorna `NULL` e continua.
+Em pipelines de produção, o objetivo é isolar linhas ruins, não derrubar o job.
 
-## Data Source
+## Fonte dos Dados
 
-NYC TLC Yellow Taxi Trip Records — public dataset, no PII.
+NYC TLC Yellow Taxi Trip Records — dataset público, sem PII.
 https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 
-## Warehouse Used
+## Warehouse Utilizado
 
-Snowflake `COMPUTE_WH` (X-Small, auto-suspend 60s).
+Snowflake `COMPUTE_WH` (X-Small, auto-suspend em 60s).

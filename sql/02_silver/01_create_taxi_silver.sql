@@ -1,6 +1,6 @@
 -- ============================================================
--- Silver Layer: Typed, cleaned trip data
--- Enforces proper data types after Bronze landing.
+-- Camada Silver: dados de corrida tipados e limpos
+-- Aplica os tipos corretos após a chegada na camada Bronze.
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.TAXI_SILVER.TAXI_PRATA (

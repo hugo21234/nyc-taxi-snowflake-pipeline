@@ -1,7 +1,7 @@
 -- ============================================================
--- Gold Layer: Patch DROPOFF_DATE_ID on FACT_TRIP
--- Requires DROPOFF_DATE_ID column to exist on FACT_TRIP.
--- Run after adding the column via ALTER TABLE if needed.
+-- Camada Gold: corrige DROPOFF_DATE_ID em FACT_TRIP
+-- Exige que a coluna DROPOFF_DATE_ID já exista em FACT_TRIP.
+-- Executar após adicionar a coluna via ALTER TABLE, se necessário.
 -- ============================================================
 
 UPDATE TAXI_NYC.TAXI_GOLD.FACT_TRIP AS f

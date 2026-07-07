@@ -1,6 +1,6 @@
 -- ============================================================
--- Gold Layer DDL: DIM_VENDOR
--- Surrogate key via IDENTITY. Grain: one row per vendor.
+-- Camada Gold DDL: DIM_VENDOR
+-- Chave substituta via IDENTITY. Granularidade: uma linha por fornecedor.
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.TAXI_GOLD.DIM_VENDOR (

@@ -1,6 +1,6 @@
 -- ============================================================
--- Bronze Layer: Zone lookup dimension (NYC TLC taxi_zone_lookup.csv)
--- Maps LocationID → Borough + Zone name
+-- Camada Bronze: dimensão de zonas (NYC TLC taxi_zone_lookup.csv)
+-- Mapeia LocationID → Bairro (Borough) + nome da Zona
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.NYC_TAXI_RAW.TAXI_ZONE_D (

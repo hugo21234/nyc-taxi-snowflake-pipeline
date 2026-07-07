@@ -1,162 +1,93 @@
 -- =================================================================
--- Gold Layer: Analytical Queries — NYC Yellow Taxi Pipeline
--- Dataset: NYC TLC public data (no PII, no sensitive information)
--- Source tables: TAXI_SILVER.TAXI_PRATA + NYC_TAXI_RAW.TAXI_ZONE_D
+-- Camada Gold: Queries Analíticas — Pipeline NYC Yellow Taxi
+-- Dataset: dados públicos da NYC TLC (sem PII, sem informações sensíveis)
+-- Tabelas de origem: FACT_TRIP, DIM_LOCATION, DIM_PAYEMENT
+-- As 6 queries abaixo alimentam exatamente os 6 painéis do dashboard
+-- em docs/dashboard.png.
 -- =================================================================
 
 
--- ── 1. Average fare by borough (pickup) ─────────────────────────
+-- ── 1. Média de Tarifa por Bairro (pickup) ──────────────────────
+-- Painel: "Média De Tarifa" — ranking de FARE_AMOUNT médio por bairro de embarque
 SELECT
-    z.BOROUGH                        AS PICKUP_BOROUGH,
-    COUNT(*)                         AS TOTAL_TRIPS,
-    ROUND(AVG(t.FARE_AMOUNT), 2)     AS AVG_FARE,
-    ROUND(AVG(t.TIP_AMOUNT), 2)      AS AVG_TIP,
-    ROUND(AVG(t.TOTAL_AMOUNT), 2)    AS AVG_TOTAL
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA t
-JOIN TAXI_NYC.NYC_TAXI_RAW.TAXI_ZONE_D z
-    ON t.PU_LOCATION_ID = z.LOCATION_ID::VARCHAR
-GROUP BY z.BOROUGH
-ORDER BY TOTAL_TRIPS DESC;
+    dl.BAIRRO                        AS BAIRRO,
+    COUNT(*)                         AS TOTAL_CORRIDAS,
+    ROUND(AVG(f.FARE_AMOUNT), 2)     AS MEDIA_TARIFA
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+JOIN TAXI_NYC.TAXI_GOLD.DIM_LOCATION dl
+    ON f.PICKUP_LOCATION_ID = dl.LOCATION_ID
+GROUP BY dl.BAIRRO
+ORDER BY MEDIA_TARIFA DESC;
 
 
--- ── 2. Trip volume and avg fare by hour of day ──────────────────
+-- ── 2. Distribuição por Tipo de Pagamento ───────────────────────
+-- Painel: "Distribuição Por Tipo De Pagamento" — participação de cada
+-- forma de pagamento (Cartão de Crédito, Dinheiro, Disputa, Sem Cobrança)
 SELECT
-    HOUR(TPEP_PICKUP_DATETIME)  AS PICKUP_HOUR,
-    COUNT(*)                    AS TOTAL_TRIPS,
-    ROUND(AVG(TOTAL_AMOUNT), 2) AS AVG_TOTAL_FARE
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
-GROUP BY PICKUP_HOUR
-ORDER BY PICKUP_HOUR;
-
-
--- ── 3. Payment type distribution ────────────────────────────────
--- 1=Credit card, 2=Cash, 3=No charge, 4=Dispute, 5=Unknown
-SELECT
-    CASE PAYMENT_TYPE
-        WHEN '1' THEN 'Credit Card'
-        WHEN '2' THEN 'Cash'
-        WHEN '3' THEN 'No Charge'
-        WHEN '4' THEN 'Dispute'
-        ELSE 'Unknown'
-    END                                             AS PAYMENT_METHOD,
-    COUNT(*)                                        AS TOTAL_TRIPS,
+    dp.PAYMENT_DESCRIPTION           AS TIPO_PAGAMENTO,
+    COUNT(*)                         AS TOTAL_CORRIDAS,
     ROUND(COUNT(*) * 100.0
-        / SUM(COUNT(*)) OVER (), 2)                 AS PCT_SHARE
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
-GROUP BY PAYMENT_TYPE
-ORDER BY TOTAL_TRIPS DESC;
+        / SUM(COUNT(*)) OVER (), 2)  AS PERCENTUAL
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+JOIN TAXI_NYC.TAXI_GOLD.DIM_PAYEMENT dp
+    ON f.PAYMENT_ID = dp.PAYMENT_ID
+GROUP BY dp.PAYMENT_DESCRIPTION
+ORDER BY TOTAL_CORRIDAS DESC;
 
 
--- ── 4. Top 10 pickup zones by volume ────────────────────────────
+-- ── 3. Média de Tempo de Viagem por Corrida, por Bairro ─────────
+-- Painel: "Média de Tempo De Viagem Por Corrida" — duração média
+-- (em minutos) das corridas, agrupadas por bairro de embarque
 SELECT
-    z.ZONE                           AS PICKUP_ZONE,
-    z.BOROUGH                        AS BOROUGH,
-    COUNT(*)                         AS TOTAL_TRIPS,
-    ROUND(AVG(t.TRIP_DISTANCE), 2)   AS AVG_DISTANCE_MILES
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA t
-JOIN TAXI_NYC.NYC_TAXI_RAW.TAXI_ZONE_D z
-    ON t.PU_LOCATION_ID = z.LOCATION_ID::VARCHAR
-GROUP BY z.ZONE, z.BOROUGH
-ORDER BY TOTAL_TRIPS DESC
-LIMIT 10;
-
-
--- ── 5. Average trip duration by borough ─────────────────────────
-SELECT
-    z.BOROUGH                                         AS PICKUP_BOROUGH,
+    dl.BAIRRO                                          AS BAIRRO,
     ROUND(AVG(
-        DATEDIFF('minute',
-            t.TPEP_PICKUP_DATETIME,
-            t.TPEP_DROPOFF_DATETIME)
-    ), 1)                                             AS AVG_DURATION_MIN,
-    ROUND(AVG(t.TRIP_DISTANCE), 2)                    AS AVG_DISTANCE_MILES
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA t
-JOIN TAXI_NYC.NYC_TAXI_RAW.TAXI_ZONE_D z
-    ON t.PU_LOCATION_ID = z.LOCATION_ID::VARCHAR
+        DATEDIFF('minute', f.PICKUP_DATETIME, f.DROPOFF_DATETIME)
+    ), 2)                                               AS MEDIA_TEMPO_MIN
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+JOIN TAXI_NYC.TAXI_GOLD.DIM_LOCATION dl
+    ON f.PICKUP_LOCATION_ID = dl.LOCATION_ID
 WHERE
-    -- Exclude outliers: trips under 1 min or over 3 hours
-    DATEDIFF('minute',
-        t.TPEP_PICKUP_DATETIME,
-        t.TPEP_DROPOFF_DATETIME) BETWEEN 1 AND 180
-GROUP BY z.BOROUGH
-ORDER BY AVG_DURATION_MIN DESC;
+    -- Exclui outliers: corridas com menos de 1 minuto ou mais de 3 horas
+    DATEDIFF('minute', f.PICKUP_DATETIME, f.DROPOFF_DATETIME) BETWEEN 1 AND 180
+GROUP BY dl.BAIRRO
+ORDER BY MEDIA_TEMPO_MIN DESC;
 
 
--- ── 6. Daily trip volume and revenue trend ───────────────────────
+-- ── 4. Receita de Corridas por Hora do Dia ──────────────────────
+-- Painel: "Receita de Corridas por Hora do Dia" — soma de TOTAL_AMOUNT
+-- agrupada pela hora de embarque, mostrando os picos de faturamento
 SELECT
-    DATE(TPEP_PICKUP_DATETIME)   AS TRIP_DATE,
-    COUNT(*)                     AS TOTAL_TRIPS,
-    ROUND(SUM(TOTAL_AMOUNT), 2)  AS TOTAL_REVENUE,
-    ROUND(AVG(TOTAL_AMOUNT), 2)  AS AVG_FARE
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
-GROUP BY TRIP_DATE
-ORDER BY TRIP_DATE;
+    HOUR(f.PICKUP_DATETIME)          AS HORA_CORRIDA,
+    COUNT(*)                         AS TOTAL_CORRIDAS,
+    ROUND(SUM(f.TOTAL_AMOUNT), 2)    AS RECEITA_TOTAL
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+GROUP BY HORA_CORRIDA
+ORDER BY HORA_CORRIDA;
 
 
--- ── 7. Tip rate by payment type and borough ─────────────────────
--- NULLIF prevents division by zero on zero-fare rows
+-- ── 5. Top 3 Bairros com Mais Corridas Pegas ────────────────────
+-- Painel: "Top 3 Bairros com Mais Corridas Pegas" — ranking de volume
+-- de embarques por bairro (contagem por local de embarque)
 SELECT
-    z.BOROUGH,
-    CASE PAYMENT_TYPE
-        WHEN '1' THEN 'Credit Card'
-        WHEN '2' THEN 'Cash'
-        ELSE 'Other'
-    END                                               AS PAYMENT_METHOD,
-    ROUND(AVG(t.TIP_AMOUNT), 2)                       AS AVG_TIP,
-    ROUND(AVG(t.TIP_AMOUNT / NULLIF(t.FARE_AMOUNT, 0)) * 100, 1) AS AVG_TIP_PCT
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA t
-JOIN TAXI_NYC.NYC_TAXI_RAW.TAXI_ZONE_D z
-    ON t.PU_LOCATION_ID = z.LOCATION_ID::VARCHAR
-WHERE t.FARE_AMOUNT > 0
-GROUP BY z.BOROUGH, PAYMENT_TYPE
-ORDER BY z.BOROUGH, AVG_TIP DESC;
+    dl.BAIRRO                        AS BAIRRO,
+    COUNT(*)                         AS CONTAGEM_EMBARQUES
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+JOIN TAXI_NYC.TAXI_GOLD.DIM_LOCATION dl
+    ON f.PICKUP_LOCATION_ID = dl.LOCATION_ID
+GROUP BY dl.BAIRRO
+ORDER BY CONTAGEM_EMBARQUES DESC
+LIMIT 3;
 
 
--- ── 8. EDA: Fare amount distribution buckets ────────────────────
+-- ── 6. Top 3 Médias de Gorjeta por Bairro ───────────────────────
+-- Painel: "Tops 3 Médias De Gorjetas Por Bairros" — ranking dos bairros
+-- com maior média de TIP_AMOUNT por corrida
 SELECT
-    CASE
-        WHEN FARE_AMOUNT < 0          THEN 'Negative (anomaly)'
-        WHEN FARE_AMOUNT = 0          THEN 'Zero'
-        WHEN FARE_AMOUNT BETWEEN 0.01 AND 10   THEN '$0.01 – $10'
-        WHEN FARE_AMOUNT BETWEEN 10.01 AND 25  THEN '$10 – $25'
-        WHEN FARE_AMOUNT BETWEEN 25.01 AND 50  THEN '$25 – $50'
-        WHEN FARE_AMOUNT BETWEEN 50.01 AND 100 THEN '$50 – $100'
-        ELSE '$100+'
-    END                          AS FARE_BUCKET,
-    COUNT(*)                     AS TOTAL_TRIPS,
-    ROUND(COUNT(*) * 100.0
-        / SUM(COUNT(*)) OVER (), 2) AS PCT_SHARE
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
-GROUP BY FARE_BUCKET
-ORDER BY MIN(FARE_AMOUNT);
-
-
--- ── 9. EDA: Trip distance distribution buckets ──────────────────
-SELECT
-    CASE
-        WHEN TRIP_DISTANCE = 0                  THEN 'Zero (anomaly)'
-        WHEN TRIP_DISTANCE BETWEEN 0.01 AND 1   THEN '0 – 1 mile'
-        WHEN TRIP_DISTANCE BETWEEN 1.01 AND 3   THEN '1 – 3 miles'
-        WHEN TRIP_DISTANCE BETWEEN 3.01 AND 10  THEN '3 – 10 miles'
-        WHEN TRIP_DISTANCE BETWEEN 10.01 AND 30 THEN '10 – 30 miles'
-        ELSE '30+ miles (outlier)'
-    END                          AS DISTANCE_BUCKET,
-    COUNT(*)                     AS TOTAL_TRIPS,
-    ROUND(AVG(FARE_AMOUNT), 2)   AS AVG_FARE
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA
-GROUP BY DISTANCE_BUCKET
-ORDER BY MIN(TRIP_DISTANCE);
-
-
--- ── 10. EDA: Data quality summary (Bronze vs Silver row count) ───
-SELECT
-    'TAXI_BRONZE (raw)'  AS layer,
-    COUNT(*)             AS total_rows
-FROM TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE
-
-UNION ALL
-
-SELECT
-    'TAXI_PRATA (cleaned)' AS layer,
-    COUNT(*)               AS total_rows
-FROM TAXI_NYC.TAXI_SILVER.TAXI_PRATA;
+    dl.BAIRRO                        AS BAIRRO,
+    ROUND(AVG(f.TIP_AMOUNT), 2)      AS MEDIA_GORJETA
+FROM TAXI_NYC.TAXI_GOLD.FACT_TRIP f
+JOIN TAXI_NYC.TAXI_GOLD.DIM_LOCATION dl
+    ON f.PICKUP_LOCATION_ID = dl.LOCATION_ID
+GROUP BY dl.BAIRRO
+ORDER BY MEDIA_GORJETA DESC
+LIMIT 3;

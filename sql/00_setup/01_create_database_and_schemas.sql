@@ -1,6 +1,6 @@
 -- ============================================================
--- 00_setup: Database and schema creation
--- Architecture: Medallion (Bronze → Silver → Gold Star Schema)
+-- 00_setup: Criação de database e schemas
+-- Arquitetura: Medallion (Bronze → Silver → Gold Star Schema)
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS TAXI_NYC;

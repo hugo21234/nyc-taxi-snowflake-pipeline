@@ -1,6 +1,6 @@
 -- ============================================================
--- Gold Layer DDL: DIM_PAYEMENT
--- Surrogate key via IDENTITY. Grain: one row per payment type.
+-- Camada Gold DDL: DIM_PAYEMENT
+-- Chave substituta via IDENTITY. Granularidade: uma linha por tipo de pagamento.
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.TAXI_GOLD.DIM_PAYEMENT (

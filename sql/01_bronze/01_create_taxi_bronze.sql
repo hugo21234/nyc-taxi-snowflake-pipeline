@@ -1,7 +1,7 @@
 -- ============================================================
--- Bronze Layer: Raw ingestion table
--- All columns VARCHAR — avoids load failures on type mismatches.
--- Type enforcement happens in the Silver layer.
+-- Camada Bronze: tabela de ingestão bruta
+-- Todas as colunas em VARCHAR — evita falhas de carga por
+-- incompatibilidade de tipo. A tipagem é aplicada na camada Silver.
 -- ============================================================
 
 CREATE OR REPLACE TABLE TAXI_NYC.NYC_TAXI_RAW.TAXI_BRONZE (

@@ -1,5 +1,5 @@
 -- ============================================================
--- Gold Layer: Add Foreign Keys to FACT_TRIP
+-- Camada Gold: adiciona Chaves Estrangeiras em FACT_TRIP
 -- ============================================================
 
 ALTER TABLE TAXI_NYC.TAXI_GOLD.FACT_TRIP
@@ -23,8 +23,8 @@ ALTER TABLE TAXI_NYC.TAXI_GOLD.FACT_TRIP
     FOREIGN KEY (VENDOR_ID_SURROGATE) REFERENCES TAXI_NYC.TAXI_GOLD.DIM_VENDOR(VENDOR_ID_SURROGATE);
 
 -- ============================================================
--- Gold Layer DML: Load FACT_TRIP
--- Joins Silver with all dimensions to resolve surrogate keys.
+-- Camada Gold DML: carga de FACT_TRIP
+-- Faz join da Silver com todas as dimensões para resolver as chaves substitutas.
 -- ============================================================
 
 INSERT INTO TAXI_NYC.TAXI_GOLD.FACT_TRIP (
